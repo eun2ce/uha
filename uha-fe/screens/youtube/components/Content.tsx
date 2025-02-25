@@ -1,16 +1,38 @@
-import React, {memo} from "react";
+import React, {memo, useEffect, useState} from "react";
 import {Image, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
 import Markdown from "react-native-markdown-display";
 
+// readme-{YYYY}.md 파일을 불러오는 예시 (예시로 static 파일을 사용하는 경우, 실제로는 API 호출을 사용할 수 있음)
+const fetchReadmeFile = async (year: string) => {
+    // 예시로, 연도에 맞는 readme 파일을 로드하는 로직
+    try {
+        const response = await fetch(`https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme-${year}.md?plain=1`);
+        const content = await response.text();
+        return content;
+    } catch (error) {
+        console.error("Error loading readme file:", error);
+        return "";
+    }
+};
+
 const Content: React.FC<{
     channel: any;
-    readmeContent: string;
     currentPage: number;
     setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
     searchDate: string;
     setSearchDate: React.Dispatch<React.SetStateAction<string>>;
     itemsPerPage: number;
-}> = ({channel, readmeContent, currentPage, setCurrentPage, searchDate, setSearchDate, itemsPerPage}) => {
+}> = ({channel, currentPage, setCurrentPage, searchDate, setSearchDate, itemsPerPage}) => {
+    const [readmeContent, setReadmeContent] = useState<string>("");
+
+    // 연도에 맞는 readme 파일을 불러오는 useEffect
+    useEffect(() => {
+        const year = searchDate.split("-")[0]; // YYYY만 추출
+        if (year) {
+            fetchReadmeFile(year).then(setReadmeContent);
+        }
+    }, [searchDate]);
+
     const lines = readmeContent.split("\n");
     const tableHeaderAndSecondLine = lines.slice(0, 2);
     const contentLines = lines.slice(2);

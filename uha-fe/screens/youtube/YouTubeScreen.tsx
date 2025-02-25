@@ -8,11 +8,12 @@ export default function YouTubeScreen() {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(0);
     const [searchDate, setSearchDate] = useState(""); // 검색할 날짜 (YYYY-MM-DD)
-    const itemsPerPage = 10; // 한 페이지당 5줄 표시
+    const itemsPerPage = 10; // 한 페이지당 10줄 표시
 
     const currentYear = new Date().getFullYear(); // 현재 연도
 
     useEffect(() => {
+        // 채널 정보 가져오기
         fetch("http://127.0.0.1:8000/youtube/channel-info/")
             .then((res) => res.json())
             .then((data) => {
