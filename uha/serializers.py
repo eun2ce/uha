@@ -11,3 +11,4 @@ class YouTubeChannelSerializer(serializers.Serializer):
     subscriber_count = serializers.CharField(source="statistics.subscriberCount")
     video_count = serializers.CharField(source="statistics.videoCount")
     country = serializers.CharField(source="snippet.country")
+    recent_videos = serializers.ListField(child=serializers.DictField(), required=False)
