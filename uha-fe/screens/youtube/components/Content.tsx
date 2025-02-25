@@ -1,10 +1,9 @@
-import React, {memo, useEffect, useState} from "react";
-import {Image, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
+import React, { memo, useEffect, useState } from "react";
+import { Image, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
-// readme-{YYYY}.md 파일을 불러오는 예시 (예시로 static 파일을 사용하는 경우, 실제로는 API 호출을 사용할 수 있음)
+// 연도별로 readme 파일을 가져오는 함수
 const fetchReadmeFile = async (year: string) => {
-    // 예시로, 연도에 맞는 readme 파일을 로드하는 로직
     try {
         const response = await fetch(`https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme-${year}.md?plain=1`);
         const content = await response.text();
@@ -17,29 +16,40 @@ const fetchReadmeFile = async (year: string) => {
 
 const Content: React.FC<{
     channel: any;
+    readmeContent: string;
     currentPage: number;
     setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
     searchDate: string;
     setSearchDate: React.Dispatch<React.SetStateAction<string>>;
     itemsPerPage: number;
-}> = ({channel, currentPage, setCurrentPage, searchDate, setSearchDate, itemsPerPage}) => {
-    const [readmeContent, setReadmeContent] = useState<string>("");
+}> = ({ channel, readmeContent, currentPage, setCurrentPage, searchDate, setSearchDate, itemsPerPage }) => {
+    const [filteredContent, setFilteredContent] = useState<string>("");
 
-    // 연도에 맞는 readme 파일을 불러오는 useEffect
+    // 검색된 연도에 맞는 readme 파일을 가져오는 함수
     useEffect(() => {
-        const year = searchDate.split("-")[0]; // YYYY만 추출
-        if (year) {
-            fetchReadmeFile(year).then(setReadmeContent);
-        }
+        const fetchFilteredReadme = async () => {
+            let year = new Date().getFullYear().toString(); // 기본값은 올해
+            if (searchDate) {
+                year = searchDate.slice(0, 4); // YYYY 형식으로 연도만 추출
+            }
+            const content = await fetchReadmeFile(year); // 해당 연도의 readme 파일을 가져옴
+            setFilteredContent(content);
+        };
+
+        fetchFilteredReadme();
     }, [searchDate]);
 
-    const lines = readmeContent.split("\n");
-    const tableHeaderAndSecondLine = lines.slice(0, 2);
-    const contentLines = lines.slice(2);
+    const lines = filteredContent.split("\n");
+    const tableHeaderAndSecondLine = lines.slice(0, 2); // 표 헤더와 두 번째 라인
+    const contentLines = lines.slice(2); // 실제 내용
 
-    // 날짜 검색 처리 (검색 시 연도 상관없이)
+    // 날짜 검색 처리 (YYYY-MM-DD 형식)
     const filteredLines = searchDate
-        ? contentLines.filter((line) => line.includes(searchDate)) // 검색 날짜 포함 여부 체크
+        ? contentLines.filter((line) => {
+            // 날짜 형식 추출 (YYYY-MM-DD)
+            const dateRegex = new RegExp(`\\d{4}-${searchDate.slice(5, 7)}-${searchDate.slice(8, 10)}`, "g");
+            return dateRegex.test(line);
+        })
         : contentLines;
 
     const startIndex = currentPage * itemsPerPage;
@@ -49,7 +59,7 @@ const Content: React.FC<{
     const totalPages = Math.ceil(filteredLines.length / itemsPerPage); // 총 페이지 수
 
     // 페이지 번호 생성 (1부터 시작)
-    const pageNumbers = Array.from({length: Math.min(5, totalPages)}, (_, index) => index);
+    const pageNumbers = Array.from({ length: Math.min(5, totalPages) }, (_, index) => index);
 
     return (
         <View style={styles.container}>
@@ -57,7 +67,7 @@ const Content: React.FC<{
             <TouchableOpacity onPress={() => Linking.openURL("https://www.youtube.com/@uzuhama")} activeOpacity={0.8}>
                 <View style={styles.channelInfoContainer}>
                     <Image
-                        source={{uri: channel?.thumbnail_url || "https://via.placeholder.com/120"}}
+                        source={{ uri: channel?.thumbnail_url || "https://via.placeholder.com/120" }}
                         style={styles.channelThumbnail}
                     />
                     <View>
