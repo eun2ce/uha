@@ -9,22 +9,48 @@ from .serializers import YouTubeChannelSerializer
 
 
 def get_youtube_channel_info():
+    # YouTube 채널 정보 가져오기
     url = f"{settings.BASE_URLS['YOUTUBE']}/channels?id={settings.YOUTUBE_CHANNEL_ID}&part=id,snippet,statistics&key={settings.YOUTUBE_API_KEY}"
     response = requests.get(url)
     if response.status_code == 200:
         items = response.json().get("items", [])
         if items:
-            return items[0]
+            channel_info = items[0]
+            # 최근 영상 추가
+            # recent_videos = get_recent_videos(channel_info["id"])  # ID를 이용해 최근 영상 정보 가져오기
+            # channel_info["recent_videos"] = recent_videos
+            return channel_info
         else:
             raise Exception("채널 정보를 찾을 수 없습니다.")
     else:
         raise Exception("YouTube API 호출 실패")
 
 
+def get_recent_videos(channel_id):
+    # 최근 영상 4개 가져오기
+    url = f"{settings.BASE_URLS['YOUTUBE']}/search?channelId={channel_id}&order=date&part=snippet&maxResults=4&key={settings.YOUTUBE_API_KEY}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        items = response.json().get("items", [])
+        recent_videos = []
+        for item in items:
+            video_data = {
+                "title": item["snippet"]["title"],
+                "thumbnail_url": item["snippet"]["thumbnails"]["high"]["url"],
+                "video_url": f"https://www.youtube.com/watch?v={item['id']['videoId']}",
+            }
+            recent_videos.append(video_data)
+        return recent_videos
+    else:
+        raise Exception("최근 영상 정보를 불러오는 데 실패했습니다.")
+
+
 class YouTubeChannelInfo(APIView):
     def get(self, request, *args, **kwargs):
         try:
+            # 채널 정보와 최근 영상 가져오기
             channel_info = get_youtube_channel_info()
+            # 직렬화
             serializer = YouTubeChannelSerializer(channel_info)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:

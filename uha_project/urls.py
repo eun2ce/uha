@@ -21,7 +21,7 @@ from uha.views import YouTubeChannelInfo, NaverCafeProfileView, NaverCafeArticle
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('youtube/channel_info/', YouTubeChannelInfo.as_view(), name='youtube_channel_info'),
+    path('youtube/channel-info/', YouTubeChannelInfo.as_view(), name='youtube_channel_info'),
     path("naver-cafe/profile/", NaverCafeProfileView.as_view(), name="naver_cafe_profile"),
     path("naver-cafe/articles/<int:menu_id>/<int:page_id>/", NaverCafeArticlesView.as_view(),
          name="naver_cafe_articles"),
