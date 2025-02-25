@@ -4,31 +4,35 @@ import Markdown from "react-native-markdown-display";
 
 const Content: React.FC<{
     channel: any;
-    readmeContent: string | null;
+    readmeContent: string;
     currentPage: number;
     setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
-    endIndex: number;
-    filteredLines: string[];
     searchDate: string;
     setSearchDate: React.Dispatch<React.SetStateAction<string>>;
-}> = ({channel, readmeContent, currentPage, setCurrentPage, endIndex, filteredLines, searchDate, setSearchDate}) => {
-    const totalPages = Math.ceil(filteredLines.length / 5); // 총 페이지 수
-    const paginationRange = 5; // 페이지네이션 버튼 수
+    itemsPerPage: number;
+}> = ({channel, readmeContent, currentPage, setCurrentPage, searchDate, setSearchDate, itemsPerPage}) => {
+    const lines = readmeContent.split("\n");
+    const tableHeaderAndSecondLine = lines.slice(0, 2);
+    const contentLines = lines.slice(2);
 
-    // 이전/다음 페이지 버튼 활성화 여부
-    const isPrevDisabled = currentPage === 0;
-    const isNextDisabled = currentPage === totalPages - 1;
+    // 날짜 검색 처리 (검색 시 연도 상관없이)
+    const filteredLines = searchDate
+        ? contentLines.filter((line) => line.includes(searchDate)) // 검색 날짜 포함 여부 체크
+        : contentLines;
+
+    const startIndex = currentPage * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedContent = [...tableHeaderAndSecondLine, ...filteredLines.slice(startIndex, endIndex)].join("\n");
+
+    const totalPages = Math.ceil(filteredLines.length / itemsPerPage); // 총 페이지 수
 
     // 페이지 번호 생성 (1부터 시작)
-    const pageNumbers = Array.from({length: Math.min(paginationRange, totalPages)}, (_, index) => index);
+    const pageNumbers = Array.from({length: Math.min(5, totalPages)}, (_, index) => index);
 
     return (
         <View style={styles.container}>
             {/* 채널 정보 */}
-            <TouchableOpacity
-                onPress={() => Linking.openURL("https://www.youtube.com/@uzuhama")}
-                activeOpacity={0.8}
-            >
+            <TouchableOpacity onPress={() => Linking.openURL("https://www.youtube.com/@uzuhama")} activeOpacity={0.8}>
                 <View style={styles.channelInfoContainer}>
                     <Image
                         source={{uri: channel?.thumbnail_url || "https://via.placeholder.com/120"}}
@@ -53,14 +57,12 @@ const Content: React.FC<{
             />
 
             {/* Readme 내용 */}
-            {readmeContent !== undefined && (
+            {paginatedContent ? (
                 <View style={styles.readmeContainer}>
-                    {readmeContent ? (
-                        <Markdown>{readmeContent}</Markdown>
-                    ) : (
-                        <Text>Readme 파일을 불러오는 데 실패했습니다.</Text>
-                    )}
+                    <Markdown>{paginatedContent}</Markdown>
                 </View>
+            ) : (
+                <Text>Readme 파일을 불러오는 데 실패했습니다.</Text>
             )}
 
             {/* 페이지네이션 버튼 */}
@@ -73,21 +75,14 @@ const Content: React.FC<{
 
                 {pageNumbers.map((pageNum) => (
                     <TouchableOpacity key={pageNum} onPress={() => setCurrentPage(pageNum)}>
-                        <Text
-                            style={[
-                                styles.pageButton,
-                                currentPage === pageNum && styles.selectedPageButton,
-                            ]}
-                        >
+                        <Text style={[styles.pageButton, currentPage === pageNum && styles.selectedPageButton]}>
                             {pageNum + 1}
                         </Text>
                     </TouchableOpacity>
                 ))}
 
-                {endIndex < filteredLines.length && (
-                    <TouchableOpacity
-                        onPress={() => setCurrentPage((prev) => prev + 1)}
-                    >
+                {currentPage < totalPages - 1 && (
+                    <TouchableOpacity onPress={() => setCurrentPage((prev) => prev + 1)}>
                         <Text style={styles.pageButton}>{'>'}</Text>
                     </TouchableOpacity>
                 )}
@@ -139,15 +134,11 @@ const styles = StyleSheet.create({
         marginTop: 3,
     },
     pageButton: {
-        padding: 10,
+        padding: 5,
         marginHorizontal: 5,
     },
     selectedPageButton: {
         backgroundColor: '#f0f0f0',
-    },
-    pageButtonText: {
-        fontSize: 12,
-        color: '#333',
     },
 });
 

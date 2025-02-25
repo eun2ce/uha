@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Text } from "react-native";
 import Content from "./components/Content";
 
 export default function YouTubeScreen() {
@@ -8,7 +8,9 @@ export default function YouTubeScreen() {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(0);
     const [searchDate, setSearchDate] = useState(""); // 검색할 날짜 (YYYY-MM-DD)
-    const itemsPerPage = 5; // 한 페이지당 5줄 표시
+    const itemsPerPage = 10; // 한 페이지당 5줄 표시
+
+    const currentYear = new Date().getFullYear(); // 현재 연도
 
     useEffect(() => {
         fetch("http://127.0.0.1:8000/youtube/channel-info/")
@@ -24,17 +26,23 @@ export default function YouTubeScreen() {
     }, []);
 
     useEffect(() => {
-        fetch("https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme.md?plain=1")
-            .then((res) => res.text())
-            .then((data) => {
+        // 기본적으로 현재 연도의 readme 파일을 가져옵니다.
+        const fetchReadme = async (year: number) => {
+            try {
+                const res = await fetch(
+                    `https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme-${year}.md?plain=1`
+                );
+                const data = await res.text();
                 setReadmeContent(data);
                 setLoading(false);
-            })
-            .catch((error) => {
+            } catch (error) {
                 console.error("Error fetching readme.md:", error);
                 setLoading(false);
-            });
-    }, []);
+            }
+        };
+
+        fetchReadme(currentYear); // 기본적으로 올해의 readme 파일을 가져옵니다.
+    }, [currentYear]);
 
     if (loading) {
         return <ActivityIndicator />;
@@ -44,28 +52,15 @@ export default function YouTubeScreen() {
         return <Text>Error loading markdown</Text>;
     }
 
-    // 마크다운을 줄 단위로 나누기
-    const lines = readmeContent.split("\n");
-    const tableHeaderAndSecondLine = lines.slice(0, 2);
-    const contentLines = lines.slice(2);
-    const filteredLines = searchDate
-        ? contentLines.filter((line) => line.includes(searchDate))
-        : contentLines;
-
-    const startIndex = currentPage * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedContent = [...tableHeaderAndSecondLine, ...filteredLines.slice(startIndex, endIndex)].join("\n");
-
     return (
         <Content
             channel={channel}
-            readmeContent={paginatedContent}
+            readmeContent={readmeContent}
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
-            endIndex={endIndex}
-            filteredLines={filteredLines}
             searchDate={searchDate}
             setSearchDate={setSearchDate}
+            itemsPerPage={itemsPerPage}
         />
     );
 }
