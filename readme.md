@@ -9,10 +9,10 @@
 ### 기능
 
 * 유튜브 채널 정보
-* 실시간 라이브 다시보기 링크 – 일부 공개된 URL을 자동으로 정리하여 제공합니다.
-** GitHub Actions를 활용하여 일정 주기로 라이브 여부를 확인
-** 연도 및 날짜별로 정리된 다시보기 링크
+* 실시간 라이브 다시보기 링크 – 일부 공개된 URL을 자동으로 정리
+** GitHub Actions를 활용하여 일정 주기로 라이브 여부를 확인 및 링크 크롤링 하여 연도 및 날짜별로 정리된 [다시보기 링크](https://github.com/eun2ce/uzuhama-live-link) 제공
 * 네이버 카페 인기 게시글 및 공지 확인 - 팬카페의 주요 소식과 인기 글 제공
+** bs4기반 크롤링
 
 ### 사용기술
 
@@ -36,5 +36,7 @@ NAVER_CAFE_ID="30027092"
 
 ```
 $ conda create -n uha python=3.11
+$ conda activate uha
+$ pip install -r requriements.txt
 $ python manage.py runserver
 ```
