@@ -37,4 +37,4 @@ NAVER_CAFE_ID="30027092"
 ```
 $ conda create -n uha python=3.11
 $ python manage.py runserver
-``
+```
