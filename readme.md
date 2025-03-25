@@ -1,5 +1,7 @@
 # UHA
 
+[demo video](https://youtu.be/demk_b-eLPM?feature=shared)
+
 ## 유튜버 우주하마 팬 웹앱
 
 유튜브 API와 네이버 데이터 크롤링을 활용하여 필요한 정보들을 추려 제공합니다.
