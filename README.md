@@ -1,5 +1,7 @@
 # UHA (Uzuhama Hub Application)
 
+![Image](https://github.com/user-attachments/assets/56f60526-72c0-4f36-8e0e-4ca9ba8e6569)
+
 ## 프로젝트 구조
 
 ```
