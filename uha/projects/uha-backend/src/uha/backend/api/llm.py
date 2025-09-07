@@ -125,9 +125,26 @@ async def call_lm_studio(prompt: str, max_tokens: int = 500, temperature: float 
 
 
 async def fetch_live_stream_data(year: int) -> str:
-    """Fetch live stream data from GitHub repository."""
+    """Fetch live stream data from local submodule."""
+    import os
+    
+    # Try vendor directory first (new location), then fallback to old location
+    possible_paths = [
+        f"vendor/uzuhama-live-link/readme-{year}.md",
+        f"uzuhama-live-link/readme-{year}.md"
+    ]
+    
+    for file_path in possible_paths:
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except Exception as e:
+                continue
+    
+    # Fallback to GitHub if local files not found
     url = f"https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme-{year}.md"
-
+    
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
@@ -138,7 +155,7 @@ async def fetch_live_stream_data(year: int) -> str:
         return response.text
 
     except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="GitHub 저장소에 연결할 수 없습니다.")
+        raise HTTPException(status_code=503, detail="로컬 파일과 GitHub 저장소 모두 접근할 수 없습니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"데이터 가져오기 오류: {str(e)}")
 

@@ -1,3 +1,6 @@
 [submodule "uzuhama-live-link"]
 	path = uzuhama-live-link
 	url = https://github.com/eun2ce/uzuhama-live-link.git
+[submodule "vendor/uzuhama-live-link"]
+	path = vendor/uzuhama-live-link
+	url = https://github.com/eun2ce/uzuhama-live-link.git
