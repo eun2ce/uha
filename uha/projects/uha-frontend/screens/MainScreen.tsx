@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Animated, ScrollView } from 'react-native';
 import StreamList from './youtube/components/StreamList';
 import SummarySection from './youtube/components/SummarySection';
 import NaverCafeScreen from './naver/NaverCafeScreen';
@@ -9,12 +9,43 @@ type TabType = 'streams' | 'summary' | 'naver';
 export default function MainScreen() {
     const [activeTab, setActiveTab] = useState<TabType>('streams');
     const [currentYear, setCurrentYear] = useState(2025);
+    const [fadeAnim] = useState(new Animated.Value(1));
+    const [slideAnim] = useState(new Animated.Value(0));
 
     const tabs = [
-        { id: 'streams', title: '라이브 스트림', icon: '📺' },
-        { id: 'summary', title: 'AI 요약', icon: '🤖' },
-        { id: 'naver', title: '네이버 카페', icon: '🟢' },
+        { id: 'streams', title: '라이브 스트림', icon: '📺', color: '#4F46E5', gradient: ['#4F46E5', '#7C3AED'] },
+        { id: 'summary', title: 'AI 요약', icon: '🤖', color: '#059669', gradient: ['#059669', '#0D9488'] },
+        { id: 'naver', title: '네이버 카페', icon: '🟢', color: '#00C73C', gradient: ['#00C73C', '#00B33C'] },
     ];
+
+    useEffect(() => {
+        // 탭 변경 시 부드러운 애니메이션
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: -20,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        });
+    }, [activeTab]);
 
     const renderContent = () => {
         switch (activeTab) {
@@ -34,40 +65,82 @@ export default function MainScreen() {
         }
     };
 
-    const getTabColor = (tabId: string) => {
-        switch (tabId) {
-            case 'streams':
-                return '#007bff';
-            case 'summary':
-                return '#28a745';
-            case 'naver':
-                return '#00C73C';
-            default:
-                return '#6c757d';
-        }
-    };
+    const getCurrentTab = () => tabs.find(tab => tab.id === activeTab);
 
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#fff" />
             
-            {/* Header */}
+            {/* Modern Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>UHA Dashboard</Text>
-                <Text style={styles.headerSubtitle}>YouTube & 네이버 카페 분석</Text>
+                <View style={styles.headerContent}>
+                    <View>
+                        <Text style={styles.headerTitle}>UHA</Text>
+                        <Text style={styles.headerSubtitle}>스마트 콘텐츠 분석</Text>
+                    </View>
+                    <View style={[styles.headerBadge, { backgroundColor: getCurrentTab()?.color + '20' }]}>
+                        <Text style={[styles.headerBadgeText, { color: getCurrentTab()?.color }]}>
+                            {getCurrentTab()?.icon}
+                        </Text>
+                    </View>
+                </View>
+            </View>
+
+            {/* Modern Tab Navigation */}
+            <View style={styles.tabContainer}>
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabScrollContent}
+                >
+                    {tabs.map((tab, index) => (
+                        <TouchableOpacity
+                            key={tab.id}
+                            style={[
+                                styles.tab,
+                                activeTab === tab.id && [styles.activeTab, { backgroundColor: tab.color + '10' }]
+                            ]}
+                            onPress={() => setActiveTab(tab.id as TabType)}
+                        >
+                            <View style={[
+                                styles.tabIconContainer,
+                                activeTab === tab.id && { backgroundColor: tab.color }
+                            ]}>
+                                <Text style={[
+                                    styles.tabIcon,
+                                    activeTab === tab.id && styles.activeTabIcon
+                                ]}>
+                                    {tab.icon}
+                                </Text>
+                            </View>
+                            <Text style={[
+                                styles.tabText,
+                                activeTab === tab.id && [styles.activeTabText, { color: tab.color }]
+                            ]}>
+                                {tab.title}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
             </View>
 
             {/* Year Selector (only for streams and summary tabs) */}
             {(activeTab === 'streams' || activeTab === 'summary') && (
                 <View style={styles.yearSelector}>
-                    <Text style={styles.yearLabel}>연도:</Text>
-                    <View style={styles.yearButtons}>
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.yearScrollContent}
+                    >
                         {[2020, 2021, 2022, 2023, 2024, 2025].map((year) => (
                             <TouchableOpacity
                                 key={year}
                                 style={[
                                     styles.yearButton,
-                                    currentYear === year && styles.yearButtonActive
+                                    currentYear === year && [
+                                        styles.yearButtonActive,
+                                        { backgroundColor: getCurrentTab()?.color }
+                                    ]
                                 ]}
                                 onPress={() => setCurrentYear(year)}
                             >
@@ -79,42 +152,22 @@ export default function MainScreen() {
                                 </Text>
                             </TouchableOpacity>
                         ))}
-                    </View>
+                    </ScrollView>
                 </View>
             )}
 
-            {/* Tab Navigation */}
-            <View style={styles.tabContainer}>
-                {tabs.map((tab) => (
-                    <TouchableOpacity
-                        key={tab.id}
-                        style={[
-                            styles.tab,
-                            activeTab === tab.id && [
-                                styles.activeTab,
-                                { borderBottomColor: getTabColor(tab.id) }
-                            ]
-                        ]}
-                        onPress={() => setActiveTab(tab.id as TabType)}
-                    >
-                        <Text style={styles.tabIcon}>{tab.icon}</Text>
-                        <Text style={[
-                            styles.tabText,
-                            activeTab === tab.id && [
-                                styles.activeTabText,
-                                { color: getTabColor(tab.id) }
-                            ]
-                        ]}>
-                            {tab.title}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            {/* Content */}
-            <View style={styles.content}>
+            {/* Content with Animation */}
+            <Animated.View 
+                style={[
+                    styles.content,
+                    {
+                        opacity: fadeAnim,
+                        transform: [{ translateY: slideAnim }]
+                    }
+                ]}
+            >
                 {renderContent()}
-            </View>
+            </Animated.View>
         </SafeAreaView>
     );
 }
@@ -122,96 +175,137 @@ export default function MainScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#FAFAFA',
     },
     header: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e9ecef',
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 20,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#E5E7EB',
+    },
+    headerContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: '#333',
-        marginBottom: 4,
+        fontSize: 28,
+        fontWeight: '800',
+        color: '#111827',
+        letterSpacing: -0.5,
     },
     headerSubtitle: {
-        fontSize: 14,
-        color: '#6c757d',
+        fontSize: 15,
+        color: '#6B7280',
+        fontWeight: '500',
+        marginTop: 2,
     },
-    yearSelector: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e9ecef',
-        flexDirection: 'row',
+    headerBadge: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    yearLabel: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#333',
-        marginRight: 12,
-    },
-    yearButtons: {
-        flexDirection: 'row',
-        flex: 1,
-    },
-    yearButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        marginRight: 8,
-        borderRadius: 16,
-        backgroundColor: '#f8f9fa',
-        borderWidth: 1,
-        borderColor: '#dee2e6',
-    },
-    yearButtonActive: {
-        backgroundColor: '#007bff',
-        borderColor: '#007bff',
-    },
-    yearButtonText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#6c757d',
-    },
-    yearButtonTextActive: {
-        color: '#fff',
+    headerBadgeText: {
+        fontSize: 20,
     },
     tabContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e9ecef',
+        backgroundColor: '#FFFFFF',
+        paddingTop: 16,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#E5E7EB',
+    },
+    tabScrollContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 16,
     },
     tab: {
-        flex: 1,
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 16,
-        borderBottomWidth: 3,
-        borderBottomColor: 'transparent',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        marginRight: 12,
+        borderRadius: 16,
+        backgroundColor: '#F9FAFB',
+        minWidth: 100,
     },
     activeTab: {
-        borderBottomWidth: 3,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    tabIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 6,
     },
     tabIcon: {
         fontSize: 16,
-        marginRight: 6,
+    },
+    activeTabIcon: {
+        fontSize: 16,
     },
     tabText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#6c757d',
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#6B7280',
+        textAlign: 'center',
     },
     activeTabText: {
+        fontWeight: '700',
+    },
+    yearSelector: {
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 16,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#E5E7EB',
+    },
+    yearScrollContent: {
+        paddingHorizontal: 20,
+    },
+    yearButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginRight: 12,
+        borderRadius: 20,
+        backgroundColor: '#F3F4F6',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    yearButtonActive: {
+        borderColor: 'transparent',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    yearButtonText: {
+        fontSize: 14,
         fontWeight: '600',
+        color: '#6B7280',
+    },
+    yearButtonTextActive: {
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
     content: {
         flex: 1,
+        backgroundColor: '#FAFAFA',
     },
 });

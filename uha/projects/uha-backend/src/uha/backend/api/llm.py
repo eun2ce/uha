@@ -7,9 +7,21 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from uha.backend.container import ApplicationContainer
+from uha.backend.database.models import DatabaseManager
+from uha.backend.models.stream_models import (
+    LiveStreamEntry,
+    PaginatedStreamsRequest,
+    PaginatedStreamsResponse,
+    StreamWithDetails,
+)
+from uha.backend.services.cache_service import StreamCacheService
 from uha.backend.settings import Settings
 
 router = APIRouter(prefix="/llm", tags=["LLM"])
+
+# Initialize database and cache service
+db_manager = DatabaseManager()
+cache_service = StreamCacheService(db_manager)
 
 
 class SummaryRequest(BaseModel):
@@ -31,11 +43,6 @@ class LiveStreamSummaryRequest(BaseModel):
     max_videos_to_analyze: int = 20  # 분석할 최대 영상 수
 
 
-class LiveStreamEntry(BaseModel):
-    date: str
-    url: str
-
-
 class LiveStreamSummaryResponse(BaseModel):
     entries: List[LiveStreamEntry]
     summary: str
@@ -43,41 +50,6 @@ class LiveStreamSummaryResponse(BaseModel):
     detailed_analysis: Optional[Dict[str, Any]] = None  # YouTube Data API 분석 결과
     common_keywords: Optional[List[str]] = None  # 공통 키워드
     engagement_stats: Optional[Dict[str, int]] = None  # 참여도 통계
-
-
-class StreamWithDetails(BaseModel):
-    date: str
-    url: str
-    video_id: str
-    title: Optional[str] = None
-    thumbnail: Optional[str] = None
-    view_count: Optional[int] = None
-    like_count: Optional[int] = None
-    comment_count: Optional[int] = None
-    duration: Optional[str] = None
-    tags: Optional[List[str]] = None
-    keywords: Optional[List[str]] = None
-    # 새로 추가된 필드들
-    ai_summary: Optional[str] = None
-    highlights: Optional[List[str]] = None
-    sentiment: Optional[str] = None
-    engagement_score: Optional[float] = None
-    category: Optional[str] = None
-
-
-class PaginatedStreamsRequest(BaseModel):
-    year: int
-    page: int = 1
-    per_page: int = 12
-    include_details: bool = True
-
-
-class PaginatedStreamsResponse(BaseModel):
-    streams: List[StreamWithDetails]
-    total_streams: int
-    current_page: int
-    total_pages: int
-    per_page: int
 
 
 async def get_settings() -> Settings:
@@ -234,20 +206,32 @@ def extract_video_id_from_url(url: str) -> str:
 
 
 async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> StreamWithDetails:
-    """Get detailed information for a single stream."""
+    """Get detailed information for a single stream with caching."""
     print(f"스트림 상세 정보 가져오기 시작: {entry.url}")
     video_id = extract_video_id_from_url(entry.url)
     print(f"추출된 비디오 ID: {video_id}")
+
+    if not video_id:
+        print(f"비디오 ID 없음: {entry.url}")
+        return StreamWithDetails(
+            date=entry.date,
+            url=entry.url,
+            video_id=video_id,
+        )
+
+    # Try to get from cache first
+    cached_stream = await cache_service.get_cached_stream(video_id)
+    if cached_stream:
+        print(f"캐시에서 스트림 데이터 로드: {video_id}")
+        return cached_stream
+
+    print(f"캐시에 없음, 새로 처리: {video_id}")
 
     stream_details = StreamWithDetails(
         date=entry.date,
         url=entry.url,
         video_id=video_id,
     )
-
-    if not video_id:
-        print(f"비디오 ID 없음: {entry.url}")
-        return stream_details
 
     print(
         f"YouTube API 키 상태: {bool(settings.youtube_api_key)} (길이: {len(settings.youtube_api_key) if settings.youtube_api_key else 0})"
@@ -257,6 +241,8 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
         print("YouTube API 키 없음 - 더미 데이터로 테스트")
         # 더미 데이터로 AI 요약 테스트
         stream_details.title = f"테스트 라이브 스트림 - {entry.date}"
+        # YouTube 썸네일 URL 패턴 사용
+        stream_details.thumbnail = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
         stream_details.ai_summary = await generate_stream_summary(
             stream_details.title,
             "테스트용 라이브 스트림입니다. 시청자들과 함께 즐거운 시간을 보냈습니다.",
@@ -272,6 +258,9 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
         stream_details.like_count = 120
         stream_details.comment_count = 45
         stream_details.duration = "PT1H30M"
+
+        # Cache the dummy data
+        await cache_service.cache_stream(stream_details)
         return stream_details
 
     try:
@@ -353,6 +342,8 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
     except Exception as e:
         print(f"Error getting details for {entry.url}: {str(e)}")
 
+    # Cache the processed stream data
+    await cache_service.cache_stream(stream_details)
     return stream_details
 
 
@@ -730,3 +721,29 @@ async def check_lm_studio_health():
         return {"status": "unhealthy", "message": "Cannot connect to LM Studio"}
     except Exception as e:
         return {"status": "unhealthy", "message": f"Error: {str(e)}"}
+
+
+@router.post("/cache/clear")
+async def clear_cache() -> dict:
+    """Clear expired cache entries."""
+    try:
+        deleted_count = await cache_service.clear_expired_cache()
+        return {"status": "success", "message": f"Cleared {deleted_count} expired cache entries"}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to clear cache: {str(e)}"}
+
+
+@router.get("/cache/stats")
+async def cache_stats() -> dict:
+    """Get cache statistics."""
+    try:
+        # Get cache statistics for recent years
+        stats = {}
+        for year in [2020, 2021, 2022, 2023, 2024, 2025]:
+            count = await cache_service.get_cached_stream_count(year)
+            if count > 0:
+                stats[str(year)] = count
+
+        return {"status": "success", "cached_streams_by_year": stats, "total_cached_streams": sum(stats.values())}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to get cache stats: {str(e)}"}

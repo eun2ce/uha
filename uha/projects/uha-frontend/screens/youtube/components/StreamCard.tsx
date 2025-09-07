@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Linking, Animated } from 'react-native';
 
 interface StreamData {
     date: string;
@@ -26,11 +26,27 @@ interface StreamCardProps {
 }
 
 export default function StreamCard({ stream }: StreamCardProps) {
+    const scaleAnim = new Animated.Value(1);
+
     const formatNumber = (num?: number): string => {
         if (!num) return '0';
         if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
         if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
         return num.toString();
+    };
+
+    const handlePressIn = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 0.98,
+            useNativeDriver: true,
+        }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+        }).start();
     };
 
     const formatDate = (dateStr: string): string => {
@@ -67,7 +83,14 @@ export default function StreamCard({ stream }: StreamCardProps) {
     };
 
     return (
-        <TouchableOpacity style={styles.card} onPress={handlePress}>
+        <Animated.View style={[styles.cardContainer, { transform: [{ scale: scaleAnim }] }]}>
+            <TouchableOpacity 
+                style={styles.card} 
+                onPress={handlePress}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                activeOpacity={1}
+            >
             {/* Thumbnail */}
             <View style={styles.thumbnailContainer}>
                 {stream.thumbnail ? (
@@ -202,29 +225,35 @@ export default function StreamCard({ stream }: StreamCardProps) {
                     </View>
                 )}
             </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+        </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
+    cardContainer: {
+        marginHorizontal: 20,
         marginBottom: 16,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 4,
         },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 6,
         overflow: 'hidden',
+        borderWidth: 0.5,
+        borderColor: '#F3F4F6',
     },
     thumbnailContainer: {
         position: 'relative',
-        height: 180,
-        backgroundColor: '#f0f0f0',
+        height: 200,
+        backgroundColor: '#F9FAFB',
     },
     thumbnail: {
         width: '100%',
@@ -235,19 +264,19 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#e9ecef',
+        backgroundColor: '#F3F4F6',
     },
     placeholderText: {
         fontSize: 32,
     },
     durationOverlay: {
         position: 'absolute',
-        bottom: 8,
-        right: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        borderRadius: 4,
-        paddingHorizontal: 6,
-        paddingVertical: 2,
+        bottom: 12,
+        right: 12,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
     },
     durationText: {
         color: '#fff',
@@ -255,7 +284,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     content: {
-        padding: 16,
+        padding: 20,
     },
     headerRow: {
         flexDirection: 'row',
@@ -264,60 +293,68 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     dateText: {
-        fontSize: 12,
-        color: '#007bff',
-        fontWeight: '600',
-        textTransform: 'uppercase',
+        fontSize: 13,
+        color: '#4F46E5',
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
     categoryBadge: {
-        backgroundColor: '#e9ecef',
-        borderRadius: 12,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
+        backgroundColor: '#EEF2FF',
+        borderRadius: 16,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
     },
     categoryText: {
-        fontSize: 10,
-        color: '#495057',
-        fontWeight: '500',
+        fontSize: 11,
+        color: '#4F46E5',
+        fontWeight: '600',
     },
     title: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#111827',
         marginBottom: 12,
-        lineHeight: 22,
+        lineHeight: 24,
+        letterSpacing: -0.2,
     },
     summaryContainer: {
-        backgroundColor: '#f8f9fa',
-        borderRadius: 6,
-        padding: 10,
-        marginBottom: 12,
-        borderLeftWidth: 3,
-        borderLeftColor: '#007bff',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        borderLeftWidth: 4,
+        borderLeftColor: '#4F46E5',
     },
     summaryText: {
-        fontSize: 13,
-        color: '#495057',
-        lineHeight: 18,
-        fontStyle: 'italic',
+        fontSize: 14,
+        color: '#475569',
+        lineHeight: 20,
+        fontWeight: '500',
     },
     statsContainer: {
         flexDirection: 'row',
-        marginBottom: 12,
+        marginBottom: 16,
         flexWrap: 'wrap',
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginRight: 12,
-        marginBottom: 4,
+        marginRight: 16,
+        marginBottom: 8,
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
     },
     statIcon: {
         fontSize: 14,
         marginRight: 4,
     },
     statText: {
-        fontSize: 12,
+        fontSize: 13,
         color: '#6c757d',
         fontWeight: '500',
     },
