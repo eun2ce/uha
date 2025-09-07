@@ -1,7 +1,5 @@
 # UHA (Uzuhama Hub Application)
 
-YouTube Data API와 Naver 카페 크롤링을 기반으로 한 웹앱입니다. LM Studio의 Qwen3 모델을 활용한 AI 요약 기능이 추가되었습니다.
-
 ## 프로젝트 구조
 
 ```
@@ -18,12 +16,9 @@ uha/
 
 ## 주요 기능
 
-### 기존 기능
 - YouTube 채널 정보 및 최근 영상 조회
 - Naver 카페 프로필 및 게시글 크롤링
 - React Native 기반 크로스 플랫폼 UI
-
-### 새로 추가된 기능 ✨
 - **LM Studio Qwen3 연동**: 로컬 AI 모델을 통한 텍스트 요약
 - **라이브 스트림 데이터 분석**: uzuhama-live-link 서브모듈 데이터 AI 요약
 - **연도별 데이터 조회**: 2020-2025년 라이브 스트림 기록 분석
