@@ -10,15 +10,6 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Node.js
-node_modules/
-
-# React Native
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
 
 ### Environment ####
 .env

@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.staticfiles import StaticFiles
 
+from uha.backend.api import llm, naver_cafe, youtube, youtube_analysis
 from uha.backend.container import ApplicationContainer
 from uha.backend.settings import Settings
 from uha.shared_kernel.domain.exception import BaseMsgException
@@ -48,6 +48,12 @@ def create_app() -> FastAPI:
 
     app.container = container  # type: ignore
     app.settings = settings  # type: ignore
+
+    # Include routers
+    app.include_router(youtube.router)
+    app.include_router(naver_cafe.router)
+    app.include_router(llm.router)
+    app.include_router(youtube_analysis.router)
 
     # Add health check endpoint
     @app.get("/health")
