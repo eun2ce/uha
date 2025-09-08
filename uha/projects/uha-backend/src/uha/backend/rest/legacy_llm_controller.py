@@ -74,8 +74,8 @@ def read_markdown_file(year: int) -> List[StreamEntry]:
     """Read stream entries from markdown file."""
     try:
         # Look for the submodule directory
-        base_path = Path(__file__).parent.parent.parent.parent.parent.parent
-        submodule_path = base_path / "uzuhama-live-link"
+        base_path = Path(__file__).parent.parent.parent.parent
+        submodule_path = base_path / "data" / "vendor" / "uzuhama-live-link"
 
         if not submodule_path.exists():
             print(f"Submodule path not found: {submodule_path}")

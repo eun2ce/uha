@@ -127,24 +127,25 @@ async def call_lm_studio(prompt: str, max_tokens: int = 500, temperature: float 
 async def fetch_live_stream_data(year: int) -> str:
     """Fetch live stream data from local submodule."""
     import os
-    
-    # Try vendor directory first (new location), then fallback to old location
+
+    # Try data/vendor directory first (new location), then fallback to old locations
     possible_paths = [
+        f"data/vendor/uzuhama-live-link/readme-{year}.md",
         f"vendor/uzuhama-live-link/readme-{year}.md",
-        f"uzuhama-live-link/readme-{year}.md"
+        f"uzuhama-live-link/readme-{year}.md",
     ]
-    
+
     for file_path in possible_paths:
         if os.path.exists(file_path):
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     return f.read()
-            except Exception as e:
+            except Exception:
                 continue
-    
+
     # Fallback to GitHub if local files not found
     url = f"https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme-{year}.md"
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url)

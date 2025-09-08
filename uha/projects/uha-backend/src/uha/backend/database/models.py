@@ -49,7 +49,7 @@ class StreamCache(Base):
 class DatabaseManager:
     """Async database manager for SQLite."""
 
-    def __init__(self, database_url: str = "sqlite+aiosqlite:///./stream_cache.db"):
+    def __init__(self, database_url: str = "sqlite+aiosqlite:///./data/sqlite/stream_cache.db"):
         self.database_url = database_url
         self.engine = create_async_engine(database_url, echo=False)
         self.SessionLocal = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
