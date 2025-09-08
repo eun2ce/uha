@@ -43,7 +43,7 @@ export default function SummarySection({ currentYear, onYearChange }: SummarySec
 
     const fetchSummary = async (year: number) => {
         setLoading(true);
-        console.log(`요약 생성 시작: ${year}년`);
+        // Start summary generation
         
         try {
             const response = await fetch("http://127.0.0.1:8000/llm/summarize-live-streams", {
@@ -58,34 +58,30 @@ export default function SummarySection({ currentYear, onYearChange }: SummarySec
                 })
             });
 
-            console.log(`API 응답 상태: ${response.status}`);
+            // API response status
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("API 에러 데이터:", errorData);
+                console.error("API error data:", errorData);
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("API 응답 데이터:", data);
-            console.log("요약 내용:", data.summary);
-            console.log("총 스트림 수:", data.total_streams);
+            // API response data received
+            // Summary data received
             
-            // 요약 데이터 검증
+            // Validate summary data
             if (!data.summary || data.summary.trim() === "") {
-                throw new Error("요약 데이터가 비어있습니다.");
+                throw new Error("Summary data is empty.");
             }
             
-            console.log("setSummaryData 호출 전");
             setSummaryData(data);
-            console.log("setShowSummary 호출 전");
             setShowSummary(true);
-            console.log("요약 생성 완료! showSummary:", true);
         } catch (error) {
             console.error("Error fetching summary:", error);
             Alert.alert(
-                "요약 생성 실패", 
-                error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다."
+                "Summary Generation Failed", 
+                error instanceof Error ? error.message : "Unknown error occurred."
             );
         } finally {
             setLoading(false);
@@ -164,7 +160,6 @@ export default function SummarySection({ currentYear, onYearChange }: SummarySec
             </View>
 
             {/* Summary Display */}
-            {console.log("렌더링 시 showSummary:", showSummary, "summaryData:", summaryData)}
             {showSummary && summaryData && (
                 <View style={styles.summaryContainer}>
                     <View style={styles.summaryHeader}>

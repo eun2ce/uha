@@ -25,7 +25,7 @@ export default function NaverCafeScreen() {
 
     const fetchProfile = async () => {
         try {
-            console.log("네이버 카페 프로필 가져오기");
+            // Fetch Naver Cafe profile
             
             const response = await fetch("http://127.0.0.1:8000/naver-cafe/profile/");
             
@@ -34,7 +34,7 @@ export default function NaverCafeScreen() {
             }
 
             const data = await response.json();
-            console.log("프로필 데이터:", data);
+            // Profile data received
             setProfile(data);
 
         } catch (error) {
@@ -52,7 +52,7 @@ export default function NaverCafeScreen() {
         }
 
         try {
-            console.log(`네이버 카페 게시글 가져오기: 페이지 ${page}`);
+            // Fetch Naver Cafe posts
             
             const response = await fetch(`http://127.0.0.1:8000/naver-cafe/articles/1/${page}/`);
             
@@ -61,7 +61,7 @@ export default function NaverCafeScreen() {
             }
 
             const data = await response.json();
-            console.log("게시글 데이터:", data);
+            // Post data received
 
             if (append) {
                 setArticles(prev => [...prev, ...data.articles]);

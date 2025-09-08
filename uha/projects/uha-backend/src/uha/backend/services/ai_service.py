@@ -61,22 +61,22 @@ class AIService:
         """Get or create summary chain."""
         if self._summary_chain is None:
             template = """
-당신은 한국어 전문 분석가입니다. 반드시 한국어로만 답변하세요.
+You are a Korean language specialist. Respond only in Korean.
 
-다음 라이브 스트림 정보를 바탕으로 한국어로 2-3문장의 간결한 요약을 작성해주세요:
+Please write a concise 2-3 sentence summary in Korean based on the following live stream information:
 
-제목: {title}
-설명: {description}
-태그/키워드: {tags_keywords}
-시청자 댓글: {comments}
+Title: {title}
+Description: {description}
+Tags/Keywords: {tags_keywords}
+Viewer Comments: {comments}
 
-요약 조건:
-1. 스트림의 주요 내용과 특징을 간결하게 설명
-2. 시청자들의 반응이나 하이라이트가 있다면 포함  
-3. 한국어로만 작성, 2-3문장 이내
-4. 구체적이고 흥미로운 내용 위주로 작성
+Summary conditions:
+1. Briefly describe the main content and features of the stream
+2. Include viewer reactions or highlights if available
+3. Write only in Korean, within 2-3 sentences
+4. Focus on specific and interesting content
 
-요약:
+Summary:
 """
 
             prompt = PromptTemplate(
@@ -91,7 +91,7 @@ class AIService:
         """Get or create sentiment analysis chain."""
         if self._sentiment_chain is None:
             template = """
-다음 텍스트의 감정을 분석하고 한국어로 답변해주세요.
+Analyze the sentiment of the following text and respond in Korean.
 
 텍스트: {text}
 
