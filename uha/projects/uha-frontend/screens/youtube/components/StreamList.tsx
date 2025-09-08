@@ -53,7 +53,7 @@ export default function StreamList({ currentYear }: StreamListProps) {
         setError(null);
 
         try {
-            console.log(`스트림 목록 가져오기: ${currentYear}년, 페이지 ${page}`);
+            // Fetch stream list
 
             const response = await fetch("http://127.0.0.1:8000/llm/streams", {
                 method: "POST",
@@ -68,17 +68,16 @@ export default function StreamList({ currentYear }: StreamListProps) {
                 })
             });
 
-            console.log(`API 응답 상태: ${response.status}`);
+            // API response status
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error("API 에러 데이터:", errorData);
+                console.error("API error data:", errorData);
                 throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
             }
 
             const data: StreamListResponse = await response.json();
-            console.log("API 응답 데이터:", data);
-            console.log(`총 ${data.total_streams}개 스트림, ${data.total_pages}페이지 중 ${data.current_page}페이지`);
+            // Stream data received
 
             setStreams(data.streams);
             setCurrentPage(data.current_page);
@@ -87,10 +86,10 @@ export default function StreamList({ currentYear }: StreamListProps) {
 
         } catch (error) {
             console.error("Error fetching streams:", error);
-            const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred.";
             setError(errorMessage);
             Alert.alert(
-                "스트림 목록 로딩 실패",
+                "Failed to Load Stream List",
                 errorMessage
             );
         } finally {
@@ -102,7 +101,7 @@ export default function StreamList({ currentYear }: StreamListProps) {
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
         fetchStreams(page);
-        // 페이지 변경 시 스크롤을 맨 위로
+        // Scroll to top on page change
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     };
 
@@ -110,7 +109,7 @@ export default function StreamList({ currentYear }: StreamListProps) {
         fetchStreams(currentPage, true);
     };
 
-    // 연도가 변경되면 첫 페이지로 리셋
+    // Reset to first page when year changes
     useEffect(() => {
         setCurrentPage(1);
         fetchStreams(1);

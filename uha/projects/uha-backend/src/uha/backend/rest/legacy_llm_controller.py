@@ -74,8 +74,8 @@ def read_markdown_file(year: int) -> List[StreamEntry]:
     """Read stream entries from markdown file."""
     try:
         # Look for the submodule directory
-        base_path = Path(__file__).parent.parent.parent.parent.parent.parent
-        submodule_path = base_path / "uzuhama-live-link"
+        base_path = Path(__file__).parent.parent.parent.parent
+        submodule_path = base_path / "data" / "vendor" / "uzuhama-live-link"
 
         if not submodule_path.exists():
             print(f"Submodule path not found: {submodule_path}")
@@ -204,7 +204,7 @@ async def get_year_summary(
         entries = read_markdown_file(request.year)
 
         if not entries:
-            return {"summary": f"{request.year}년 스트림 데이터를 찾을 수 없습니다."}
+            return {"summary": f"No stream data found for {request.year}."}
 
         # Create a sample of streams for analysis
         sample_size = min(10, len(entries))
@@ -223,7 +223,7 @@ async def get_year_summary(
                 continue
 
         if not streams:
-            return {"summary": f"{request.year}년 스트림 분석에 실패했습니다."}
+            return {"summary": f"Failed to analyze streams for {request.year}."}
 
         # Process streams
         processed_streams = await stream_service.process_streams_batch(streams)
@@ -244,9 +244,9 @@ async def get_year_summary(
 
         most_common_category = max(category_counts, key=category_counts.get) if category_counts else "일반"
 
-        summary = f"{request.year}년에는 총 {len(entries)}개의 라이브 스트림이 진행되었습니다. "
-        summary += f"주요 카테고리는 {most_common_category}이며, "
-        summary += "분석된 스트림들은 대부분 시청자들과의 활발한 소통이 이루어진 것으로 나타났습니다."
+        summary = f"Total of {len(entries)} live streams were conducted in {request.year}. "
+        summary += f"Main category is {most_common_category}, "
+        summary += "and most analyzed streams showed active communication with viewers."
 
         return {
             "year": request.year,
@@ -258,7 +258,7 @@ async def get_year_summary(
 
     except Exception as e:
         print(f"Error generating year summary: {str(e)}")
-        return {"summary": f"{request.year}년 요약 생성에 실패했습니다."}
+        return {"summary": f"Failed to generate summary for {request.year}."}
 
 
 @router.get("/health")

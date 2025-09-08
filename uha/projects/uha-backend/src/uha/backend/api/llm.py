@@ -39,15 +39,15 @@ class SummaryResponse(BaseModel):
 class LiveStreamSummaryRequest(BaseModel):
     year: int
     date_filter: Optional[str] = None  # YYYY-MM-DD format
-    include_detailed_analysis: bool = False  # YouTube Data API 상세 분석 포함 여부
-    max_videos_to_analyze: int = 20  # 분석할 최대 영상 수
+    include_detailed_analysis: bool = False  # Include YouTube Data API detailed analysis
+    max_videos_to_analyze: int = 20  # Maximum number of videos to analyze
 
 
 class LiveStreamSummaryResponse(BaseModel):
     entries: List[LiveStreamEntry]
     summary: str
     total_streams: int
-    detailed_analysis: Optional[Dict[str, Any]] = None  # YouTube Data API 분석 결과
+    detailed_analysis: Optional[Dict[str, Any]] = None  # YouTube Data API analysis results
     common_keywords: Optional[List[str]] = None  # 공통 키워드
     engagement_stats: Optional[Dict[str, int]] = None  # 참여도 통계
 
@@ -67,30 +67,23 @@ async def call_lm_studio(prompt: str, max_tokens: int = 500, temperature: float 
         "messages": [
             {
                 "role": "system",
-                "content": "You must respond ONLY in Korean. 당신은 한국어 전문 분석가입니다. 반드시 한국어로만 답변하세요. 영어나 다른 언어는 절대 사용 금지입니다. 2-3문장으로 간결하게 요약해주세요.",
+                "content": "You are a Korean language specialist. Respond ONLY in Korean. Provide concise 2-3 sentence summaries.",
             },
             {"role": "user", "content": prompt},
         ],
         "max_tokens": max_tokens,
         "temperature": temperature,
-        "stop": ["\n\n", "요약:", "Summary:"],
+        "stop": ["\n\n", "Summary:"],
     }
 
     try:
-        print(f"LM Studio 호출 준비 중... URL: {url}")
-        print(f"페이로드: {payload}")
-
         async with httpx.AsyncClient(timeout=30.0) as client:
-            print("HTTP 요청 시작...")
             response = await client.post(url, json=payload)
-            print(f"응답 상태 코드: {response.status_code}")
 
         if response.status_code != 200:
-            print(f"응답 내용: {response.text}")
-            raise HTTPException(status_code=500, detail=f"LM Studio API 호출 실패: {response.status_code}")
+            raise HTTPException(status_code=500, detail=f"LM Studio API call failed: {response.status_code}")
 
         data = response.json()
-        print(f"LM Studio 응답 데이터: {data}")
         content = data["choices"][0]["message"]["content"]
 
         # Clean up AI response - remove thinking tags and extra content
@@ -127,24 +120,25 @@ async def call_lm_studio(prompt: str, max_tokens: int = 500, temperature: float 
 async def fetch_live_stream_data(year: int) -> str:
     """Fetch live stream data from local submodule."""
     import os
-    
-    # Try vendor directory first (new location), then fallback to old location
+
+    # Try data/vendor directory first (new location), then fallback to old locations
     possible_paths = [
+        f"data/vendor/uzuhama-live-link/readme-{year}.md",
         f"vendor/uzuhama-live-link/readme-{year}.md",
-        f"uzuhama-live-link/readme-{year}.md"
+        f"uzuhama-live-link/readme-{year}.md",
     ]
-    
+
     for file_path in possible_paths:
         if os.path.exists(file_path):
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     return f.read()
-            except Exception as e:
+            except Exception:
                 continue
-    
+
     # Fallback to GitHub if local files not found
     url = f"https://raw.githubusercontent.com/eun2ce/uzuhama-live-link/main/readme-{year}.md"
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
@@ -224,12 +218,12 @@ def extract_video_id_from_url(url: str) -> str:
 
 async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> StreamWithDetails:
     """Get detailed information for a single stream with caching."""
-    print(f"스트림 상세 정보 가져오기 시작: {entry.url}")
+    # Get stream details
     video_id = extract_video_id_from_url(entry.url)
-    print(f"추출된 비디오 ID: {video_id}")
+    # Extract video ID
 
     if not video_id:
-        print(f"비디오 ID 없음: {entry.url}")
+        # No video ID found
         return StreamWithDetails(
             date=entry.date,
             url=entry.url,
@@ -239,10 +233,7 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
     # Try to get from cache first
     cached_stream = await cache_service.get_cached_stream(video_id)
     if cached_stream:
-        print(f"캐시에서 스트림 데이터 로드: {video_id}")
         return cached_stream
-
-    print(f"캐시에 없음, 새로 처리: {video_id}")
 
     stream_details = StreamWithDetails(
         date=entry.date,
@@ -255,7 +246,7 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
     )
 
     if not settings.youtube_api_key:
-        print("YouTube API 키 없음 - 더미 데이터로 테스트")
+        # No YouTube API key - using dummy data
         # 더미 데이터로 AI 요약 테스트
         stream_details.title = f"테스트 라이브 스트림 - {entry.date}"
         # YouTube 썸네일 URL 패턴 사용
@@ -321,12 +312,12 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
 
         # 추가 분석 정보 생성
         try:
-            print(f"AI 분석 시작: {video_id} - {snippet['title']}")
+            # Start AI analysis
             # AI 요약 생성
             stream_details.ai_summary = await generate_stream_summary(
                 snippet["title"], snippet.get("description", ""), comment_texts, stream_details.tags or [], keywords
             )
-            print(f"AI 요약 완료: {stream_details.ai_summary[:50]}...")
+            # AI summary completed
 
             # 하이라이트 추출
             stream_details.highlights = extract_highlights_from_comments(comment_texts, snippet["title"])
@@ -367,53 +358,53 @@ async def get_stream_details(entry: LiveStreamEntry, settings: Settings) -> Stre
 async def generate_stream_summary(
     title: str, description: str, comments: List[str], tags: List[str], keywords: List[str]
 ) -> str:
-    """개별 스트림에 대한 AI 요약 생성."""
+    """Generate AI summary for individual stream."""
     try:
-        print(f"요약 생성 함수 호출: {title}")
+        # Generate summary function called
 
-        # 댓글에서 주요 내용 추출 (상위 10개)
+        # Extract main content from comments (top 10)
         top_comments = comments[:10]
         comments_text = " ".join(top_comments) if top_comments else ""
 
-        # 태그와 키워드 결합
+        # Combine tags and keywords
         all_tags = ", ".join(tags + keywords) if tags or keywords else ""
 
         prompt = f"""
-다음 라이브 스트림 정보를 바탕으로 한국어로 2-3문장의 간결한 요약을 작성해주세요:
+Please write a concise 2-3 sentence summary in Korean based on the following live stream information:
 
-제목: {title}
-설명: {description[:200]}...
-주요 태그/키워드: {all_tags}
-시청자 댓글 요약: {comments_text[:300]}...
+Title: {title}
+Description: {description[:200]}...
+Main tags/keywords: {all_tags}
+Viewer comments summary: {comments_text[:300]}...
 
-요약 조건:
-1. 스트림의 주요 내용과 특징을 간결하게 설명
-2. 시청자들의 반응이나 하이라이트가 있다면 포함
-3. 한국어로만 작성, 2-3문장 이내
-4. 구체적이고 흥미로운 내용 위주로 작성
+Summary conditions:
+1. Briefly describe the main content and features of the stream
+2. Include viewer reactions or highlights if available
+3. Write only in Korean, within 2-3 sentences
+4. Focus on specific and interesting content
 
-요약:"""
+Summary:"""
 
-        print("LM Studio 호출 시작...")
+        # Call LM Studio
         summary = await call_lm_studio(prompt, max_tokens=200, temperature=0.4)
-        print(f"LM Studio 응답: {summary}")
+        # LM Studio response received
 
-        # 요약이 너무 짧거나 영어인 경우 기본 요약 제공
+        # Provide default summary if too short or in English
         if (
             not summary
             or len(summary.strip()) < 10
             or any(word in summary for word in ["Let me", "Based on", "The stream"])
         ):
-            summary = f"{title}에서 진행된 라이브 스트리밍입니다. "
+            summary = f"Live streaming session from {title}. "
             if tags:
-                summary += f"주요 내용은 {', '.join(tags[:3])} 관련이며, "
-            summary += "시청자들과의 실시간 소통이 활발했습니다."
+                summary += f"Main content related to {', '.join(tags[:3])}, "
+            summary += "Active real-time communication with viewers."
 
         return summary.strip()
 
     except Exception as e:
         print(f"Error generating summary: {str(e)}")
-        return f"{title}에서 진행된 라이브 스트리밍입니다."
+        return f"Live streaming session from {title}."
 
 
 def extract_highlights_from_comments(comments: List[str], title: str) -> List[str]:
@@ -547,14 +538,19 @@ async def analyze_stream_details(
         }
 
     except Exception as e:
-        print(f"YouTube 분석 중 오류: {str(e)}")
-        return {"error": f"YouTube 분석 실패: {str(e)}", "videos": [], "common_keywords": [], "total_engagement": {}}
+        # YouTube analysis error
+        return {
+            "error": f"YouTube analysis failed: {str(e)}",
+            "videos": [],
+            "common_keywords": [],
+            "total_engagement": {},
+        }
 
 
 @router.post("/summarize", response_model=SummaryResponse)
 async def summarize_text(request: SummaryRequest):
     """Summarize given text using LM Studio."""
-    prompt = f"다음 텍스트를 2-3문장으로 간결하게 요약해주세요:\n\n{request.content}"
+    prompt = f"Please summarize the following text in 2-3 concise sentences:\n\n{request.content}"
 
     summary = await call_lm_studio(prompt, request.max_tokens, request.temperature)
 
@@ -583,7 +579,7 @@ async def summarize_live_streams(request: LiveStreamSummaryRequest):
     engagement_stats = None
 
     if request.include_detailed_analysis and settings.youtube_api_key:
-        print(f"YouTube 상세 분석 시작: {min(len(entries), request.max_videos_to_analyze)}개 영상")
+        # Start YouTube detailed analysis
         detailed_analysis = await analyze_stream_details(entries, settings, request.max_videos_to_analyze)
         common_keywords = detailed_analysis.get("common_keywords", [])
         engagement_stats = detailed_analysis.get("total_engagement", {})
@@ -592,7 +588,7 @@ async def summarize_live_streams(request: LiveStreamSummaryRequest):
     dates_only = [entry.date for entry in entries[:20]]  # Limit to first 20 entries for analysis
     dates_text = ", ".join(dates_only)
 
-    # 상세 분석 데이터가 있으면 프롬프트에 포함
+    # Include detailed analysis data in prompt if available
     additional_info = ""
     if detailed_analysis and detailed_analysis.get("videos"):
         video_count = len(detailed_analysis["videos"])
@@ -602,8 +598,8 @@ async def summarize_live_streams(request: LiveStreamSummaryRequest):
 
         additional_info = f"""
 
-추가 분석 데이터:
-- 분석된 영상 수: {video_count}개
+Additional analysis data:
+- Analyzed videos: {video_count}
 - 총 조회수: {total_views:,}회
 - 총 좋아요: {total_likes:,}개
 - 주요 키워드: {keywords_text}
@@ -613,7 +609,7 @@ async def summarize_live_streams(request: LiveStreamSummaryRequest):
 {request.year}년에 총 {len(entries)}회의 라이브 스트림이 진행되었습니다. 주요 날짜는 {dates_text} 등입니다.
 {additional_info}
 
-이 데이터를 바탕으로 다음을 한국어로 3-4문장으로 요약해주세요:
+Based on this data, please provide a 3-4 sentence summary in Korean:
 1. 월별 활동량과 패턴
 2. 가장 활발했던 시기
 3. 전체적인 스트리밍 특징
@@ -637,9 +633,7 @@ async def summarize_live_streams(request: LiveStreamSummaryRequest):
             if engagement_stats:
                 avg_views = engagement_stats.get("average_views", 0)
                 total_likes = engagement_stats.get("total_likes", 0)
-                base_summary += (
-                    f" 분석된 영상들의 평균 조회수는 {avg_views:,}회이며, 총 {total_likes:,}개의 좋아요를 받았습니다."
-                )
+                base_summary += f" Analyzed videos averaged {avg_views:,} views with total {total_likes:,} likes."
 
             summary = base_summary
 
@@ -683,20 +677,16 @@ async def get_paginated_streams(request: PaginatedStreamsRequest):
 
     # Get detailed information for each stream
     streams_with_details = []
-    print(
-        f"상세 정보 처리 시작 - include_details: {request.include_details}, youtube_api_key 존재: {bool(settings.youtube_api_key)}"
-    )
 
     if request.include_details:
-        print(f"상세 정보 가져오기: {len(paginated_entries)}개 스트림")
-        # 동시에 여러 스트림 처리 (최대 5개씩)
+        # Process multiple streams concurrently (max 5 at a time)
         import asyncio
 
         async def process_batch(batch_entries):
             tasks = [get_stream_details(entry, settings) for entry in batch_entries]
             return await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 5개씩 배치로 처리
+        # Process in batches of 5
         for i in range(0, len(paginated_entries), 5):
             batch = paginated_entries[i : i + 5]
             batch_results = await process_batch(batch)
@@ -707,7 +697,7 @@ async def get_paginated_streams(request: PaginatedStreamsRequest):
                 else:
                     print(f"Error processing stream: {result}")
     else:
-        print("상세 정보 없이 기본 정보만 처리")
+        # Processing basic info only
         # 상세 정보 없이 기본 정보만
         for entry in paginated_entries:
             video_id = extract_video_id_from_url(entry.url)

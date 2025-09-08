@@ -1,4 +1,4 @@
-"""YouTube Data API를 활용한 상세 영상 분석 API."""
+"""Detailed video analysis API using YouTube Data API."""
 
 import re
 from typing import Any, Dict, List
@@ -83,7 +83,7 @@ async def get_video_details(video_id: str, api_key: str) -> Dict[str, Any]:
         response = await client.get(url, params=params)
 
     if response.status_code != 200:
-        raise HTTPException(status_code=400, detail=f"YouTube API 호출 실패: {response.status_code}")
+        raise HTTPException(status_code=400, detail=f"YouTube API call failed: {response.status_code}")
 
     data = response.json()
     items = data.get("items", [])
@@ -162,11 +162,11 @@ def extract_keywords_from_text(text: str, max_keywords: int = 10) -> List[str]:
 
 
 async def analyze_video_sentiment(title: str, description: str, comments: List[str]) -> str:
-    """비디오의 전반적인 감정 분석 (간단한 규칙 기반)."""
+    """Overall sentiment analysis of video (simple rule-based)."""
     positive_words = ["좋", "최고", "대박", "멋지", "훌륭", "완벽", "사랑", "감사", "재밌", "웃기"]
     negative_words = ["싫", "별로", "최악", "나쁘", "화나", "짜증", "실망", "지루", "아쉽"]
 
-    all_text = f"{title} {description} {' '.join(comments[:20])}"  # 상위 20개 댓글만 분석
+    all_text = f"{title} {description} {' '.join(comments[:20])}"  # Analyze top 20 comments only
 
     positive_count = sum(1 for word in positive_words if word in all_text)
     negative_count = sum(1 for word in negative_words if word in all_text)
@@ -181,7 +181,7 @@ async def analyze_video_sentiment(title: str, description: str, comments: List[s
 
 @router.post("/analyze-streams", response_model=StreamAnalysisResponse)
 async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = Depends(get_settings)):
-    """YouTube 스트림들을 분석하여 상세 정보 제공."""
+    """Analyze YouTube streams to provide detailed information."""
     if not settings.youtube_api_key:
         raise HTTPException(status_code=400, detail="YouTube API 키가 설정되지 않았습니다.")
 
@@ -191,7 +191,7 @@ async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = D
     total_comments = 0
     all_keywords = []
 
-    for url in request.video_urls[:10]:  # 최대 10개 영상만 처리
+    for url in request.video_urls[:10]:  # Process max 10 videos only
         try:
             video_id = extract_video_id(url)
 
@@ -206,7 +206,7 @@ async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = D
             if request.extract_comments:
                 comments_data = await get_video_comments(video_id, settings.youtube_api_key, request.max_comments)
 
-            # 댓글 처리
+            # Process comments
             top_comments = []
             comment_texts = []
             for comment_item in comments_data:
@@ -226,7 +226,7 @@ async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = D
             keywords = extract_keywords_from_text(text_for_keywords)
             all_keywords.extend(keywords)
 
-            # 감정 분석
+            # Sentiment analysis
             sentiment = await analyze_video_sentiment(snippet["title"], snippet.get("description", ""), comment_texts)
 
             # 통계 정보
@@ -243,7 +243,7 @@ async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = D
             total_likes += video_stats.like_count
             total_comments += video_stats.comment_count
 
-            # 비디오 분석 결과
+            # Video analysis result
             video_analysis = VideoAnalysis(
                 video_id=video_id,
                 title=snippet["title"],
@@ -267,9 +267,9 @@ async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = D
     keyword_counter = Counter(all_keywords)
     common_keywords = [word for word, count in keyword_counter.most_common(15)]
 
-    # 전체 요약 생성
+    # Generate overall summary
     avg_views = total_views // len(videos) if videos else 0
-    summary = f"총 {len(videos)}개 영상 분석 완료. 평균 조회수 {avg_views:,}회, 총 좋아요 {total_likes:,}개, 총 댓글 {total_comments:,}개"
+    summary = f"Analysis of {len(videos)} videos completed. Average views: {avg_views:,}, total likes: {total_likes:,}, total comments: {total_comments:,}"
 
     return StreamAnalysisResponse(
         videos=videos,
@@ -286,12 +286,12 @@ async def analyze_streams(request: StreamAnalysisRequest, settings: Settings = D
 
 @router.post("/analyze-single-video")
 async def analyze_single_video(video_url: str, settings: Settings = Depends(get_settings)):
-    """단일 비디오 분석."""
+    """Single video analysis."""
     request = StreamAnalysisRequest(video_urls=[video_url])
     result = await analyze_streams(request, settings)
 
     if not result.videos:
-        raise HTTPException(status_code=404, detail="비디오 분석에 실패했습니다.")
+        raise HTTPException(status_code=404, detail="Failed to analyze video.")
 
     return result.videos[0]
 

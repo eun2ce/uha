@@ -47,7 +47,7 @@ async def get_youtube_channel_info(settings: Settings) -> Dict[str, Any]:
         response = await client.get(url, params=params)
 
     if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="YouTube API 호출 실패")
+        raise HTTPException(status_code=400, detail="YouTube API call failed")
 
     data = response.json()
     items = data.get("items", [])
